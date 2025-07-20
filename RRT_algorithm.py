@@ -30,9 +30,29 @@ def steer(src, tgt, step):
                 src)
 
 
-def collision(node, obstacles):
+
+def point_in_obstacle(x, y, obstacles):
     for (ox, oy, r) in obstacles:
-        if math.hypot(node.x - ox, node.y - oy) <= r:
+        if math.hypot(x - ox, y - oy) <= r:
+            return True
+    return False
+
+
+def collision(node, obstacles):
+    return point_in_obstacle(node.x, node.y, obstacles)
+
+
+def collision_edge(a, b, obstacles, resolution= 1.0):
+
+    seg_len = dist(a, b)
+    if seg_len == 0:
+        return collision(a, obstacles)
+    steps = int(seg_len / resolution)
+    for i in range(steps + 1):
+        t = i / steps if steps else 1.0
+        x = a.x + t * (b.x - a.x)
+        y = a.y + t * (b.y - a.y)
+        if point_in_obstacle(x, y, obstacles):
             return True
     return False
 
@@ -64,7 +84,7 @@ def rrt(start,goal,*,
         near = nearest(nodes, rnd)
         new  = steer(near, rnd, step_size)
 
-        if collision(new, obstacles):
+        if collision_edge(near, new, obstacles):
             continue
 
         nodes.append(new)
@@ -105,6 +125,10 @@ if __name__ == "__main__":
     ax.scatter([n.x for n in nodes],
                [n.y for n in nodes],
                s=4, c='lightgray')
+    
+    for n in nodes:
+        if n.parent is not None:
+            ax.plot([n.x, n.parent.x], [n.y, n.parent.y], linewidth=0.5, color='lightgray')
 
     grid_spacing = 5
     for x in range(X_RANGE[0], X_RANGE[1]+1, grid_spacing):
